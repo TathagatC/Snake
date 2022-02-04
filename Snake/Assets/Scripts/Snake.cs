@@ -8,20 +8,21 @@ public class Snake : MonoBehaviour
     private Vector2Int gridPosition;
     private float gridMoveTimer;
     private float gridMoveTimerMax;
-    //private LevelGrid levelGrid;
-
-    // public void SetUp(LevelGrid levelGrid)
-    // {
-    //     this.levelGrid = levelGrid;
-    // }
+    private List<Transform> _segments = new List<Transform>();
+    public Transform bodyPrefab;
+    public int intialSize = 3;
 
     private void Awake()
     {
         gridPosition = new Vector2Int(10,10);
-        gridMoveTimerMax = .40f;
+        gridMoveTimerMax = .10f;
         gridMoveTimer = gridMoveTimerMax;
         gridMoveDirection = new Vector2Int(1, 0);
-        //levelGrid = new LevelGrid();
+    }
+
+    void Start()
+    {
+        ResetState();
     }
 
     private void Update()
@@ -29,6 +30,14 @@ public class Snake : MonoBehaviour
         KeyInputs();
         GridMovement();
     }
+
+    // void FixedUpdate()
+    // {
+    //     for(int i = _segments.Count - 1; i > 0 ; i--)
+    //     {
+    //         _segments[i].position = _segments[i - 1].position;    
+    //     }
+    // }
 
     private void KeyInputs()
     {
@@ -69,17 +78,20 @@ public class Snake : MonoBehaviour
     private void GridMovement()
     {
         gridMoveTimer += Time.deltaTime;
+
         if(gridMoveTimer >= gridMoveTimerMax)
         {
             gridMoveTimer -= gridMoveTimerMax;
+
+            for(int i = _segments.Count - 1; i > 0 ; i--)
+        {
+            _segments[i].position = _segments[i - 1].position;    
+        }
+
             gridPosition += gridMoveDirection;
 
             transform.position = new Vector3(gridPosition.x, gridPosition.y);
             transform.eulerAngles = new Vector3(0, 0, GetAngleFromVector(gridMoveDirection) - 90);
-
-            //levelGrid = GameObject.Find("SnakeMoved").GetComponent<LevelGrid>();
-            //levelGrid.SnakeMoved(gridPosition);
-            //levelGrid = new GameObject()
         }
     }
 
@@ -93,5 +105,42 @@ public class Snake : MonoBehaviour
     public Vector2Int GetGridPosition()
     {
         return gridPosition;
+    }
+
+    private void Grow()
+    {
+        Transform segment = Instantiate(this.bodyPrefab);
+        segment.position = _segments[_segments.Count -1].position;
+
+        _segments.Add(segment);
+    }
+
+    private void ResetState()
+    {
+        for(int i = 1; i < _segments.Count; i++)
+        {
+            Destroy(_segments[i].gameObject);    
+        }
+
+        _segments.Clear();
+        _segments.Add(this.transform);
+
+        for(int i = 1; i < this.intialSize; i++)
+        {
+            _segments.Add(Instantiate(this.bodyPrefab));    
+        }
+
+        this.transform.position = Vector3.zero;
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if(other.tag == "Food")
+        {
+            Grow();   
+        } else if( other.tag == "Obstacle")
+        {
+            ResetState();
+        }
     }
 }
